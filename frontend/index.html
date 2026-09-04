@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>e-MaapSetu | Unified Legal Metrology Online Verification & Digital Certification Platform</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        gov: {
+                            blue: '#1e3a8a',
+                            navy: '#0f172a',
+                            lightBlue: '#3b82f6',
+                            saffron: '#ea580c',
+                            green: '#059669',
+                            slate: '#f8fafc'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Leaflet CSS & JS for GIS Mapping -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <!-- Chart.js for Analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800&display=swap');
+        
+        :root {
+            --glass-bg: rgba(255, 255, 255, 0.72);
+            --glass-border: rgba(255, 255, 255, 0.65);
+            --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+            --glass-dark-bg: rgba(15, 23, 42, 0.84);
+            --glass-dark-border: rgba(255, 255, 255, 0.12);
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+            background: linear-gradient(135deg, #f0f4f9 0%, #e2e8f0 50%, #edf2f7 100%);
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+            transition: background 0.3s ease, color 0.3s ease;
+        }
+
+        /* Ambient Glowing Mesh Orbs for Frosted Glass Refraction */
+        .ambient-glow {
+            position: fixed;
+            border-radius: 9999px;
+            filter: blur(85px);
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.42;
+            transition: all 0.5s ease;
+        }
+        .orb-1 { top: -80px; left: -80px; width: 480px; height: 480px; background: radial-gradient(circle, #3b82f6 0%, rgba(59, 130, 246, 0) 70%); }
+        .orb-2 { top: 35%; right: -120px; width: 520px; height: 520px; background: radial-gradient(circle, #6366f1 0%, rgba(99, 102, 241, 0) 70%); }
+        .orb-3 { bottom: -100px; left: 15%; width: 550px; height: 550px; background: radial-gradient(circle, #38bdf8 0%, rgba(56, 189, 248, 0) 70%); }
+        .orb-4 { top: 65%; right: 20%; width: 420px; height: 420px; background: radial-gradient(circle, #f59e0b 0%, rgba(245, 158, 11, 0) 70%); opacity: 0.22; }
+
+        /* Glassmorphic Surfaces (Light / Bright Mode) */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.72) !important;
+            backdrop-filter: blur(16px) saturate(180%);
+            -webkit-backdrop-filter: blur(16px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.75) !important;
+            box-shadow: 0 10px 30px 0 rgba(15, 23, 42, 0.05), inset 0 1px 1px 0 rgba(255, 255, 255, 0.9) !important;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.75) !important;
+            backdrop-filter: blur(16px) saturate(180%);
+            -webkit-backdrop-filter: blur(16px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.8) !important;
+            box-shadow: 0 8px 24px 0 rgba(30, 58, 138, 0.06), inset 0 1px 1px 0 rgba(255, 255, 255, 0.95) !important;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .glass-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 16px 36px 0 rgba(30, 58, 138, 0.1), inset 0 1px 1px 0 rgba(255, 255, 255, 1) !important;
+        }
+
+        .glass-dark {
+            background: rgba(15, 23, 42, 0.84) !important;
+            backdrop-filter: blur(20px) saturate(190%);
+            -webkit-backdrop-filter: blur(20px) saturate(190%);
+            border: 1px solid rgba(255, 255, 255, 0.14) !important;
+            box-shadow: 0 16px 36px 0 rgba(0, 0, 0, 0.25), inset 0 1px 0 0 rgba(255, 255, 255, 0.15) !important;
+        }
+
+        .glass-header {
+            background: rgba(15, 23, 42, 0.85) !important;
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25);
+        }
+
+        .glass-nav {
+            background: rgba(15, 23, 42, 0.6) !important;
+            backdrop-filter: blur(14px) saturate(160%);
+            -webkit-backdrop-filter: blur(14px) saturate(160%);
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .glass-modal {
+            background: rgba(255, 255, 255, 0.88) !important;
+            backdrop-filter: blur(24px) saturate(200%);
+            -webkit-backdrop-filter: blur(24px) saturate(200%);
+            border: 1px solid rgba(255, 255, 255, 0.8) !important;
+            box-shadow: 0 25px 60px -12px rgba(15, 23, 42, 0.35), inset 0 1px 1px 0 rgba(255, 255, 255, 1) !important;
+        }
+
+        /* Dark Mode High-Contrast Cyber Glass Theme */
+        html.dark, html.dark body, body.dark {
+            background: linear-gradient(135deg, #060913 0%, #0b1120 50%, #030712 100%) !important;
+            color: #f1f5f9 !important;
+        }
+
+        html.dark .glass-panel, body.dark .glass-panel {
+            background: rgba(15, 23, 42, 0.82) !important;
+            border-color: rgba(255, 255, 255, 0.12) !important;
+            box-shadow: 0 16px 36px 0 rgba(0, 0, 0, 0.45), inset 0 1px 0 0 rgba(255, 255, 255, 0.1) !important;
+            color: #f1f5f9 !important;
+        }
+
+        html.dark .glass-card, body.dark .glass-card {
+            background: rgba(30, 41, 59, 0.75) !important;
+            border-color: rgba(255, 255, 255, 0.14) !important;
+            box-shadow: 0 12px 30px 0 rgba(0, 0, 0, 0.4), inset 0 1px 0 0 rgba(255, 255, 255, 0.12) !important;
+            color: #f1f5f9 !important;
+        }
+
+        html.dark .glass-card:hover, body.dark .glass-card:hover {
+            border-color: rgba(96, 165, 250, 0.45) !important;
+            box-shadow: 0 18px 42px 0 rgba(0, 0, 0, 0.6), inset 0 1px 0 0 rgba(255, 255, 255, 0.2) !important;
+        }
+
+        html.dark .glass-modal, body.dark .glass-modal {
+            background: rgba(15, 23, 42, 0.96) !important;
+            border-color: rgba(255, 255, 255, 0.18) !important;
+            box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.85), inset 0 1px 0 0 rgba(255, 255, 255, 0.15) !important;
+            color: #f8fafc !important;
+        }
+
+        html.dark .glass-modal h1, html.dark .glass-modal h2, html.dark .glass-modal h3, html.dark .glass-modal h4, html.dark .glass-modal label,
+        body.dark .glass-modal h1, body.dark .glass-modal h2, body.dark .glass-modal h3, body.dark .glass-modal h4, body.dark .glass-modal label {
+            color: #f8fafc !important;
+        }
+
+        html.dark .text-slate-800, html.dark .text-slate-900,
+        body.dark .text-slate-800, body.dark .text-slate-900 {
+            color: #f8fafc !important;
+        }
+
+        html.dark .text-slate-700, html.dark .text-slate-600,
+        body.dark .text-slate-700, body.dark .text-slate-600 {
+            color: #cbd5e1 !important;
+        }
+
+        html.dark .text-slate-500, body.dark .text-slate-500 {
+            color: #94a3b8 !important;
+        }
+
+        html.dark .bg-white, body.dark .bg-white {
+            background: rgba(30, 41, 59, 0.7) !important;
+            border-color: rgba(255, 255, 255, 0.12) !important;
+            color: #f8fafc !important;
+        }
+
+        html.dark .bg-slate-50, html.dark .bg-slate-100,
+        body.dark .bg-slate-50, body.dark .bg-slate-100 {
+            background: rgba(15, 23, 42, 0.6) !important;
+            color: #e2e8f0 !important;
+        }
+
+        html.dark .border-slate-200, html.dark .border-slate-100,
+        body.dark .border-slate-200, body.dark .border-slate-100 {
+            border-color: rgba(255, 255, 255, 0.1) !important;
+        }
+
+        html.dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]),
+        body.dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]) {
+            border-color: rgba(255, 255, 255, 0.08) !important;
+        }
+
+        html.dark input, html.dark select, html.dark textarea,
+        body.dark input, body.dark select, body.dark textarea {
+            background: rgba(15, 23, 42, 0.8) !important;
+            border-color: rgba(255, 255, 255, 0.2) !important;
+            color: #f8fafc !important;
+        }
+
+        html.dark .orb-1, body.dark .orb-1 { background: radial-gradient(circle, #1d4ed8 0%, rgba(29, 78, 216, 0) 70%); opacity: 0.35; }
+        html.dark .orb-2, body.dark .orb-2 { background: radial-gradient(circle, #4338ca 0%, rgba(67, 56, 202, 0) 70%); opacity: 0.35; }
+        html.dark .orb-3, body.dark .orb-3 { background: radial-gradient(circle, #0284c7 0%, rgba(2, 132, 199, 0) 70%); opacity: 0.35; }
+        html.dark .orb-4, body.dark .orb-4 { background: radial-gradient(circle, #b45309 0%, rgba(180, 83, 9, 0) 70%); opacity: 0.2; }
+
+        .tricolor-stripe {
+            height: 4px;
+            background: linear-gradient(90deg, #FF9933 0%, #FF9933 33.3%, #FFFFFF 33.3%, #FFFFFF 66.6%, #138808 66.6%, #138808 100%);
+        }
+
+        /* Certificate Print Styles */
+        @media print {
+            body * { visibility: hidden; }
+            #printableCertificateModal, #printableCertificateModal * { visibility: visible; }
+            #printableCertificateModal { position: absolute; left: 0; top: 0; width: 100%; }
+        }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="text-slate-800 min-h-screen flex flex-col antialiased relative">
+
+    <!-- Ambient Glowing Orbs for Glassmorphism Depth -->
+    <div class="ambient-glow orb-1"></div>
+    <div class="ambient-glow orb-2"></div>
+    <div class="ambient-glow orb-3"></div>
+    <div class="ambient-glow orb-4"></div>
+
+    <!-- Top Tricolor Border -->
+    <div class="tricolor-stripe relative z-50"></div>
+
+    <!-- Official Glassmorphic Government Header -->
+    <header class="glass-header text-white sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap items-center justify-between gap-4">
+            
+            <!-- Logo and Portal Brand -->
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="app.navigate('dashboard')">
+                <div class="w-11 h-11 bg-white/10 rounded-xl flex items-center justify-center border border-white/20 shadow-inner backdrop-blur-md">
+                    <i data-lucide="scale" class="w-6 h-6 text-amber-400"></i>
+                </div>
+                <div>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-xl font-bold tracking-tight text-white flex items-center gap-1.5">
+                            e-MaapSetu
+                            <span class="bg-amber-500/20 text-amber-300 text-[10px] uppercase font-extrabold px-2 py-0.5 rounded border border-amber-400/30 backdrop-blur-sm">Act 2009</span>
+                        </span>
+                    </div>
+                    <p class="text-xs text-blue-200">Legal Metrology Online Verification & Digital Certification</p>
+                </div>
+            </div>
+
+            <!-- Global Actions: Role Switcher + Public Verify + Theme Toggle -->
+            <div class="flex items-center space-x-2 sm:space-x-3">
+                <div class="bg-white/10 border border-white/20 rounded-xl p-1.5 flex items-center space-x-2 text-xs backdrop-blur-md shadow-sm">
+                    <span class="text-blue-200 font-medium pl-1 flex items-center gap-1">
+                        <i data-lucide="user-check" class="w-3.5 h-3.5 text-amber-400"></i>
+                        <span class="hidden sm:inline">Active Role:</span>
+                    </span>
+                    <select id="roleSwitcher" onchange="app.switchRole(this.value)" class="bg-slate-900/90 text-white font-semibold rounded-lg px-2.5 py-1 text-xs border border-white/30 focus:outline-none focus:ring-1 focus:ring-amber-400 cursor-pointer backdrop-blur-md">
+                        <option value="admin">🏛️ State Controller / Admin</option>
+                        <option value="lmo">👮 Legal Metrology Officer (LMO Verma)</option>
+                        <option value="gatc">🔬 GATC Test Centre (Apex Lab)</option>
+                        <option value="trader">🏪 Trader - Jeweler (Prem Jewellers)</option>
+                        <option value="trader_petrol">⛽ Trader - Petrol Pump (Delhi Fuels)</option>
+                        <option value="trader_weighbridge">🚛 Trader - Logistics (Metro Freight)</option>
+                    </select>
+                </div>
+
+                <!-- Public Verify Button -->
+                <button onclick="app.navigate('public-verify')" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3 py-2 rounded-xl flex items-center space-x-1.5 shadow-lg border border-emerald-400/30 backdrop-blur-sm transition">
+                    <i data-lucide="qr-code" class="w-4 h-4"></i>
+                    <span class="hidden md:inline">Public QR Verifier</span>
+                </button>
+
+                <!-- Bright / Dark Mode Switcher -->
+                <button id="themeToggleBtn" onclick="app.toggleTheme()" title="Toggle Bright / Dark Mode" class="bg-white/10 hover:bg-white/20 border border-white/20 px-3 py-2 rounded-xl text-amber-300 hover:text-white transition flex items-center justify-center space-x-1.5 backdrop-blur-md shadow-sm cursor-pointer">
+                    <span id="themeIconSlot" class="flex items-center justify-center">
+                        <i data-lucide="moon" class="w-4 h-4 text-amber-300"></i>
+                    </span>
+                    <span id="themeLabelText" class="text-xs font-bold text-blue-100 hidden sm:inline">Light</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Navigation Bar -->
+        <nav class="glass-nav px-4 sm:px-6 lg:px-8 py-2">
+            <div class="max-w-7xl mx-auto flex items-center justify-between overflow-x-auto">
+                <div class="flex space-x-1 text-xs sm:text-sm font-medium" id="navLinks">
+                    <button data-view="dashboard" onclick="app.navigate('dashboard')" class="nav-btn px-3 py-1.5 rounded-xl text-blue-200 hover:text-white hover:bg-white/10 transition flex items-center space-x-1.5">
+                        <i data-lucide="layout-dashboard" class="w-4 h-4 text-blue-300"></i>
+                        <span>Dashboard</span>
+                    </button>
+                    <button data-view="instruments" onclick="app.navigate('instruments')" class="nav-btn px-3 py-1.5 rounded-xl text-blue-200 hover:text-white hover:bg-white/10 transition flex items-center space-x-1.5">
+                        <i data-lucide="sliders" class="w-4 h-4 text-blue-300"></i>
+                        <span>Instruments Registry</span>
+                    </button>
+                    <button data-view="applications" onclick="app.navigate('applications')" class="nav-btn px-3 py-1.5 rounded-xl text-blue-200 hover:text-white hover:bg-white/10 transition flex items-center space-x-1.5">
+                        <i data-lucide="file-text" class="w-4 h-4 text-blue-300"></i>
+                        <span>Verification Applications</span>
+                    </button>
+                    <button data-view="field-inspection" id="navFieldInspection" onclick="app.navigate('field-inspection')" class="nav-btn px-3 py-1.5 rounded-xl text-blue-200 hover:text-white hover:bg-white/10 transition flex items-center space-x-1.5">
+                        <i data-lucide="clipboard-check" class="w-4 h-4 text-amber-400"></i>
+                        <span>Field Stamping App</span>
+                    </button>
+                    <button data-view="certificates" onclick="app.navigate('certificates')" class="nav-btn px-3 py-1.5 rounded-xl text-blue-200 hover:text-white hover:bg-white/10 transition flex items-center space-x-1.5">
+                        <i data-lucide="award" class="w-4 h-4 text-emerald-400"></i>
+                        <span>Certificates</span>
+                    </button>
+                    <button data-view="gis-map" onclick="app.navigate('gis-map')" class="nav-btn px-3 py-1.5 rounded-xl text-blue-200 hover:text-white hover:bg-white/10 transition flex items-center space-x-1.5">
+                        <i data-lucide="map-pin" class="w-4 h-4 text-rose-400"></i>
+                        <span>GIS Map</span>
+                    </button>
+                    <button data-view="enforcement" onclick="app.navigate('enforcement')" class="nav-btn px-3 py-1.5 rounded-xl text-blue-200 hover:text-white hover:bg-white/10 transition flex items-center space-x-1.5">
+                        <i data-lucide="shield-alert" class="w-4 h-4 text-amber-400"></i>
+                        <span>Enforcement & Vigilance</span>
+                    </button>
+                </div>
+
+                <!-- Current User Details Badge -->
+                <div class="hidden lg:flex items-center space-x-2 text-xs text-blue-200 bg-white/5 border border-white/10 px-3 py-1 rounded-full backdrop-blur-md">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span id="currentUserLabel" class="font-medium">Dr. Rajesh Sharma (Admin)</span>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Main Dynamic Content Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full relative z-10" id="mainContent">
+        <!-- Dynamic Views will render here via app.js -->
+    </main>
+
+    <!-- Toast Notification Container -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+    <!-- Modals Container -->
+    <div id="modalContainer"></div>
+
+    <!-- Official Footer -->
+    <footer class="bg-slate-900 text-slate-400 text-xs py-5 border-t border-slate-800 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex items-center space-x-2">
+                <i data-lucide="shield-check" class="w-4 h-4 text-blue-400"></i>
+                <span>Department of Legal Metrology, Weights & Measures • Government of India</span>
+            </div>
+            <div class="flex items-center space-x-4">
+                <span>Compliant with Legal Metrology Act, 2009 & General Rules, 2011</span>
+                <span>•</span>
+                <span class="text-slate-300 font-semibold">e-MaapSetu v2.0</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- App Modular Scripts -->
+    <script src="/static/js/app.js"></script>
+    <script src="/static/js/components/dashboard.js"></script>
+    <script src="/static/js/components/instrument_list.js"></script>
+    <script src="/static/js/components/application_workflow.js"></script>
+    <script src="/static/js/components/field_inspection.js"></script>
+    <script src="/static/js/components/certificate_viewer.js"></script>
+    <script src="/static/js/components/public_verifier.js"></script>
+    <script src="/static/js/components/gis_map.js"></script>
+    <script src="/static/js/components/enforcement.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            app.init();
+        });
+    </script>
+</body>
+</html>
